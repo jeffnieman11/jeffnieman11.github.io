@@ -66,7 +66,7 @@ var tooltip = d3.select("body").append("div")
     .style("opacity", 0);
 
 // load data
-d3.csv("https://raw.githubusercontent.com/jeffnieman11/Data608_Final_Project/master/vehicles.csv", function(error, data) {
+d3.csv("vehicles.csv", function(error, data) {
 
 // change string into number format
   data.forEach(function(d) {
