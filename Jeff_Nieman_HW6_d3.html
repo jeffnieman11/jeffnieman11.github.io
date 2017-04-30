@@ -1,129 +1,114 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Plotly Homework 6</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <meta charset="utf-8" />
+    </head>
+    <head>
 
-// Set up margins so nothing gets cut off
-var margin = {top: 30, right: 20, bottom: 30, left: 40},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
+     <body>
+<div class="showcase__section" id="bubble">
+<div class="spacer --small"></div>
+<div id="bubbleplots">
+ <div class="bubbleplot" data-num="0">
+   <div class="plot" id="plotdiv"></div>
+   <div class="control-row">
+     Make: <select class="Makedata">
+     </select>
+   </div>
+ </div>
+</div>
+</div>
 
+<script>
+  //Read data
+      Plotly.d3.csv('https://raw.githubusercontent.com/jeffnieman11/Data608_Final_Project/master/vehicles.csv', function(rows){
 
-// set up x values as year
-var xValue = function(d) { return d.year;},
-    xScale = d3.scale.linear().range([0, width]),
-    xMap = function(d) { return xScale(xValue(d));},
-    xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+        function unpack(rows, key) {
+            return rows.map(function(row) { return row[key]; });
+        }
 
-// set up y values as mpg (known as comb08 in data set)
-var yValue = function(d) { return d.comb08;},
-    yScale = d3.scale.linear().range([height, 0]),
-    yMap = function(d) { return yScale(yValue(d));},
-    yAxis = d3.svg.axis().scale(yScale).orient("left");
+//Set up data to filter over Make
+        var allMakeNames = unpack(rows, 'make'),
+            allYear = unpack(rows, 'year'),
+            allmpg = unpack(rows, 'comb08'),
+            listofMakes = [],
+            currentMake,
+            currentmpg = [],
+            currentYear = [];
 
-// set up fill color as cylinder to look at cylinder impact on mileage
-var cValue = function(d) { return d.cylinders;},
-    color = d3.scale.category10();
+        for (var i = 0; i < allMakeNames.length; i++ ){
+            if (listofMakes.indexOf(allMakeNames[i]) === -1 ){
+                listofMakes.push(allMakeNames[i]);
+            }
+        }
 
-// add the graph canvas to the body
-var svg = d3.select("body").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        function getMakeData(chosenMake) {
+            currentmpg = [];
+            currentYear = [];
+            for (var i = 0 ; i < allMakeNames.length ; i++){
+                if ( allMakeNames[i] === chosenMake ) {
+                    currentmpg.push(allmpg[i]);
+                    currentYear.push(allYear[i]);
+                }
+            }
+        };
 
-// add the tooltip area to the webpage
-var tooltip = d3.select("body").append("div")
-    .attr("class", "tooltip")
-    .style("opacity", 0);
+        // Default Make Data to display
+        setBubblePlot('Ford');
 
-// load data
-d3.csv("https://raw.githubusercontent.com/jeffnieman11/Data608_Final_Project/master/vehicles.csv", function(error, data) {
+        function setBubblePlot(chosenMake) {
+            getMakeData(chosenMake);
 
-// change string into number format
-  data.forEach(function(d) {
-    d.year = +d.year;
-    d.comb08 = +d.comb08;
+            //Set up graph type
 
-  });
+            var trace1 = {
+                x: currentYear,
+                y: currentmpg,
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    size: 5,
+                    opacity: 0.5
+                }
+            };
 
-  // scale
-  xScale.domain([d3.min(data, xValue)-1, d3.max(data, xValue)+1]);
-  yScale.domain([d3.min(data, yValue)-1, d3.max(data, yValue)+1]);
+            var data = [trace1];
+            // Add title to graph
+            var layout = {
+                title:'Mpg by Year by Make',
+                height: 400,
+                width: 480
+            };
 
+            //Read data into graph
+            Plotly.newPlot('plotdiv', data, layout);
+        };
 
-  // add title
-  svg.append("text")
-      .attr("x", (width / 2))
-      .attr("y", 0 - (margin.top / 2))
-      .attr("text-anchor", "middle")
-      .style("font-size", "16px")
-      .style("text-decoration", "underline")
-      .text("Graph of mpg per year with different cylinders (legend on Right)");
+        var innerContainer = document.querySelector('[data-num="0"'),
+            plotEl = innerContainer.querySelector('.plot'),
+            MakeSelector = innerContainer.querySelector('.Makedata');
 
-  // set up x axis as year
-  svg.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(xAxis)
-    .append("text")
-      .attr("class", "label")
-      .attr("x", width)
-      .attr("y", -6)
-      .style("text-anchor", "end")
-      .text("year");
+        function assignOptions(textArray, selector) {
+            for (var i = 0; i < textArray.length;  i++) {
+                var currentOption = document.createElement('option');
+                currentOption.text = textArray[i];
+                selector.appendChild(currentOption);
+            }
+        }
 
-  // set up y axis as mpg
-  svg.append("g")
-      .attr("class", "y axis")
-      .call(yAxis)
-    .append("text")
-      .attr("class", "label")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 6)
-      .attr("dy", ".71em")
-      .style("text-anchor", "end")
-      .text("mpg");
+        assignOptions(listofMakes, MakeSelector);
 
-  // draw dots with mouseover
-  svg.selectAll(".dot")
-      .data(data)
-    .enter().append("circle")
-      .attr("class", "dot")
-      .attr("r", 3.5)
-      .attr("cx", xMap)
-      .attr("cy", yMap)
-      .style("fill", function(d) { return color(cValue(d));})
-      .on("mouseover", function(d) {
-          tooltip.transition()
-               .duration(200)
-               .style("opacity", .9);
-          tooltip.html(d["cylinders"] + "<br/> (" + xValue(d)
-	        + ", " + yValue(d) + ")")
-               .style("left", (d3.event.pageX + 5) + "px")
-               .style("top", (d3.event.pageY - 28) + "px");
-      })
-      .on("mouseout", function(d) {
-          tooltip.transition()
-               .duration(500)
-               .style("opacity", 0);
-      });
+        function updateMake(){
+            setBubblePlot(MakeSelector.value);
+        }
 
-  // draw legend for cylinders
-  var legend = svg.selectAll(".legend")
-      .data(color.domain())
-    .enter().append("g")
-      .attr("class", "legend")
-      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+        MakeSelector.addEventListener('change', updateMake, false);
 
-    // draw colored rectangles for each cylinder value
-  legend.append("rect")
-      .attr("x", width - 18)
-      .attr("width", 18)
-      .attr("height", 18)
-      .style("fill", color);
-
-  // draw legend text
-  legend.append("text")
-      .attr("x", width - 24)
-      .attr("y", 9)
-      .attr("dy", ".35em")
-      .style("text-anchor", "end")
-      .text(function(d) { return d;})
 });
+
+        </script>
+    </body>
+
+</html>
